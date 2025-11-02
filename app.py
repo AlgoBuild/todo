@@ -139,13 +139,15 @@ def logout():
 @app.route('/api/todos', methods=['GET'])
 @login_required
 def get_todos():
-    """Get all todos for today"""
+    """Get all todos for today and tomorrow"""
     user_id = session['user_id']
     today = datetime.now().strftime('%Y-%m-%d')
+    tomorrow = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + 
+                __import__('datetime').timedelta(days=1)).strftime('%Y-%m-%d')
     conn = get_db()
     todos = conn.execute(
-        'SELECT * FROM todos WHERE user_id = ? AND date = ? ORDER BY priority ASC, id ASC',
-        (user_id, today)
+        'SELECT * FROM todos WHERE user_id = ? AND date IN (?, ?) ORDER BY date ASC, priority ASC, id ASC',
+        (user_id, today, tomorrow)
     ).fetchall()
     conn.close()
     return jsonify([dict(todo) for todo in todos])
@@ -157,22 +159,31 @@ def add_todo():
     user_id = session['user_id']
     data = request.json
     task = data.get('task', '').strip()
+    date_str = data.get('date', None)
     
     if not task:
         return jsonify({'error': 'Task cannot be empty'}), 400
     
+    # Validate and set date (only today or tomorrow allowed)
     today = datetime.now().strftime('%Y-%m-%d')
+    tomorrow = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + 
+                __import__('datetime').timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    if date_str and date_str not in [today, tomorrow]:
+        return jsonify({'error': 'Only today or tomorrow allowed'}), 400
+    
+    target_date = date_str if date_str else today
     conn = get_db()
     
-    # Get the max priority for today to add new item at the end
+    # Get the max priority for the target date to add new item at the end
     max_priority = conn.execute(
         'SELECT MAX(priority) FROM todos WHERE user_id = ? AND date = ?',
-        (user_id, today)
+        (user_id, target_date)
     ).fetchone()[0] or -1
     
     cursor = conn.execute(
         'INSERT INTO todos (user_id, task, completed, priority, date) VALUES (?, ?, ?, ?, ?)',
-        (user_id, task, False, max_priority + 1, today)
+        (user_id, task, False, max_priority + 1, target_date)
     )
     conn.commit()
     todo_id = cursor.lastrowid
@@ -226,11 +237,30 @@ def reorder_todos():
         return jsonify({'error': 'No todo IDs provided'}), 400
     
     conn = get_db()
-    for priority, todo_id in enumerate(todo_ids):
-        conn.execute(
-            'UPDATE todos SET priority = ? WHERE id = ? AND user_id = ?',
-            (priority, todo_id, user_id)
-        )
+    
+    # Get all todos with their dates to group by date
+    todos_data = {}
+    for todo_id in todo_ids:
+        todo = conn.execute(
+            'SELECT date FROM todos WHERE id = ? AND user_id = ?',
+            (todo_id, user_id)
+        ).fetchone()
+        if todo:
+            todos_data[todo_id] = todo['date']
+    
+    # Group by date and assign priorities within each date
+    date_priorities = {}
+    for todo_id in todo_ids:
+        if todo_id in todos_data:
+            date = todos_data[todo_id]
+            if date not in date_priorities:
+                date_priorities[date] = 0
+            conn.execute(
+                'UPDATE todos SET priority = ? WHERE id = ? AND user_id = ?',
+                (date_priorities[date], todo_id, user_id)
+            )
+            date_priorities[date] += 1
+    
     conn.commit()
     conn.close()
     

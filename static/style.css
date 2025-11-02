@@ -144,6 +144,34 @@ header h1 {
     margin-bottom: 20px;
 }
 
+.date-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.date-toggle-btn {
+    padding: 8px 16px;
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.date-toggle-btn:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+.date-toggle-btn.active {
+    background: #333;
+    color: white;
+    border-color: #333;
+}
+
 #taskForm {
     display: flex;
     gap: 10px;
@@ -182,6 +210,17 @@ header h1 {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+}
+
+.date-header {
+    padding: 12px 20px;
+    background: #f9f9f9;
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .todo-item {

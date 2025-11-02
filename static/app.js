@@ -1,5 +1,6 @@
 let todos = [];
 let draggedElement = null;
+let selectedDate = 'today'; // 'today' or 'tomorrow'
 
 // Load todos on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Handle date toggle buttons
+    document.querySelectorAll('.date-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.date-toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedDate = btn.dataset.date;
+        });
+    });
+    
     // Handle task form submission
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -22,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const task = input.value.trim();
         
         if (task) {
-            await addTodo(task);
+            await addTodo(task, selectedDate);
             input.value = '';
         }
     });
@@ -44,14 +54,18 @@ async function loadTodos() {
 }
 
 // Add new todo
-async function addTodo(task) {
+async function addTodo(task, dateType = 'today') {
     try {
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        const targetDate = dateType === 'tomorrow' ? tomorrow : today;
+        
         const response = await fetch('/api/todos', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ task })
+            body: JSON.stringify({ task, date: targetDate })
         });
         
         if (response.status === 401) {
@@ -101,9 +115,8 @@ async function toggleTodo(id) {
 
 // Reorder todos
 async function reorderTodos() {
-    const todoIds = Array.from(document.querySelectorAll('.todo-item')).map(item => 
-        parseInt(item.dataset.id)
-    );
+    const todoItems = Array.from(document.querySelectorAll('.todo-item'));
+    const todoIds = todoItems.map(item => parseInt(item.dataset.id));
     
     try {
         const response = await fetch('/api/todos/reorder', {
@@ -120,10 +133,22 @@ async function reorderTodos() {
         }
         
         if (response.ok) {
-            // Update priorities in local array
-            todoIds.forEach((id, index) => {
+            // Update priorities in local array based on order within each date
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            
+            let todayPriority = 0;
+            let tomorrowPriority = 0;
+            
+            todoIds.forEach(id => {
                 const todo = todos.find(t => t.id === id);
-                if (todo) todo.priority = index;
+                if (todo) {
+                    if (todo.date === today) {
+                        todo.priority = todayPriority++;
+                    } else if (todo.date === tomorrow) {
+                        todo.priority = tomorrowPriority++;
+                    }
+                }
             });
         }
     } catch (error) {
@@ -146,12 +171,28 @@ function renderTodos() {
     
     emptyState.classList.remove('show');
     
-    // Sort by priority
-    const sortedTodos = [...todos].sort((a, b) => a.priority - b.priority);
+    // Sort by date then priority
+    const sortedTodos = [...todos].sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.priority - b.priority;
+    });
     
-    todoList.innerHTML = sortedTodos.map(todo => `
+    const today = new Date().toISOString().split('T')[0];
+    let currentDate = null;
+    let html = '';
+    
+    sortedTodos.forEach(todo => {
+        // Add date header if date changed
+        if (todo.date !== currentDate) {
+            currentDate = todo.date;
+            const dateLabel = todo.date === today ? 'Today' : 'Tomorrow';
+            html += `<div class="date-header">${dateLabel}</div>`;
+        }
+        
+        html += `
         <div class="todo-item ${todo.completed ? 'completed' : ''}" 
              data-id="${todo.id}" 
+             data-date="${todo.date}"
              draggable="true">
             <input type="checkbox" 
                    class="todo-checkbox" 
@@ -164,8 +205,10 @@ function renderTodos() {
                    style="display: none;"
                    onblur="finishEditing(${todo.id}, this)"
                    onkeydown="handleEditKeydown(event, ${todo.id}, this)">
-        </div>
-    `).join('');
+        </div>`;
+    });
+    
+    todoList.innerHTML = html;
     
     // Setup drag and drop
     setupDragAndDrop();
@@ -223,6 +266,15 @@ function handleDrop(e) {
     }
     
     if (draggedElement !== this) {
+        // Only allow reordering within the same date
+        const draggedDate = draggedElement.dataset.date;
+        const targetDate = this.dataset.date;
+        
+        if (draggedDate !== targetDate) {
+            this.classList.remove('drag-over');
+            return false;
+        }
+        
         const todoList = document.getElementById('todoList');
         const allItems = Array.from(todoList.querySelectorAll('.todo-item'));
         const draggedIndex = allItems.indexOf(draggedElement);
