@@ -2,6 +2,10 @@
 
 A minimalistic todo list application with drag-and-drop priority management, user authentication, and day-based task organization.
 
+## Live Demo
+
+🚀 **Try it out:** [https://minitodo.pythonanywhere.com/](https://minitodo.pythonanywhere.com/)
+
 ## Features
 
 - ✅ User authentication (login/signup)
@@ -15,7 +19,6 @@ A minimalistic todo list application with drag-and-drop priority management, use
 
 - **Backend**: Flask, SQLite
 - **Frontend**: HTML, CSS, JavaScript
-- **Deployment**: PythonAnywhere
 
 ## Setup
 
@@ -30,15 +33,6 @@ python app.py
 ```
 
 3. Open your browser and navigate to `http://localhost:5000`
-
-## PythonAnywhere Deployment
-
-1. Upload your files to PythonAnywhere
-2. In the Web tab, configure your WSGI file to point to `app.py`
-3. Make sure to set the `SECRET_KEY` environment variable for production:
-   - Go to the Files tab
-   - Edit `.env` or set it in your WSGI configuration
-4. The database will be created automatically on first run
 
 ## Database Schema
 
