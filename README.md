@@ -18,7 +18,7 @@ A minimalistic todo list application with drag-and-drop priority management, use
 
 ## Tech Stack
 
-- **Backend**: Flask, SQLite
+- **Backend**: Python, Flask, SQLite
 - **Frontend**: HTML, CSS, JavaScript
 
 ## Setup
