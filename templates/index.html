@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Today's Tasks</h1>
+            <button id="logoutBtn" class="btn-logout">Logout</button>
+        </header>
+        
+        <div class="add-task">
+            <form id="taskForm">
+                <input type="text" id="taskInput" placeholder="Add a new task..." required autofocus>
+                <button type="submit" class="btn-add">Add</button>
+            </form>
+        </div>
+        
+        <div id="todoList" class="todo-list"></div>
+        
+        <div id="empty-state" class="empty-state">
+            <p>No tasks yet. Add one above!</p>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
+
