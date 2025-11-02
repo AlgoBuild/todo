@@ -9,11 +9,12 @@ A minimalistic todo list application with drag-and-drop priority management, use
 ## Features
 
 - ✅ User authentication (login/signup)
-- ✅ Add tasks to current day
+- ✅ Add tasks for today or tomorrow
 - ✅ Check off completed tasks
-- ✅ Drag and drop to reorder tasks (change priority)
+- ✅ Drag and drop to reorder tasks within each day
+- ✅ Date-based task organization with visual headers
 - ✅ Minimalistic UI design
-- ✅ Responsive design
+- ✅ Fully responsive (mobile, tablet, desktop)
 
 ## Tech Stack
 
@@ -22,17 +23,26 @@ A minimalistic todo list application with drag-and-drop priority management, use
 
 ## Setup
 
-1. Install dependencies:
+1. Create and activate virtual environment:
 ```bash
-pip install -r requirements.txt
+python -m venv venv
+# On Windows: .\venv\bin\python
+# On Mac/Linux: source venv/bin/activate
 ```
 
-2. Run the application:
+2. Install dependencies:
 ```bash
-python app.py
+# On Windows with Git Bash venv: .\venv\bin\pip install -r requirements.txt
+# On Mac/Linux: pip install -r requirements.txt
 ```
 
-3. Open your browser and navigate to `http://localhost:5000`
+3. Run the application:
+```bash
+# On Windows with Git Bash venv: .\venv\bin\python app.py
+# On Mac/Linux: python app.py
+```
+
+4. Open your browser and navigate to `http://localhost:5000`
 
 ## Database Schema
 
@@ -44,9 +54,9 @@ python app.py
 - `POST /login` - User login
 - `POST /signup` - User signup
 - `POST /logout` - User logout
-- `GET /api/todos` - Get all todos for today
-- `POST /api/todos` - Create a new todo
-- `PUT /api/todos/<id>` - Update a todo (toggle completion)
-- `POST /api/todos/reorder` - Reorder todos based on drag and drop
+- `GET /api/todos` - Get todos for today and tomorrow
+- `POST /api/todos` - Create a new todo (today or tomorrow)
+- `PUT /api/todos/<id>` - Update a todo (toggle completion or edit text)
+- `POST /api/todos/reorder` - Reorder todos within same date
 - `DELETE /api/todos/<id>` - Delete a todo
 
