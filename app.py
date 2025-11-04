@@ -139,15 +139,19 @@ def logout():
 @app.route('/api/todos', methods=['GET'])
 @login_required
 def get_todos():
-    """Get all todos for today and tomorrow"""
+    """Get all todos for a specific date (defaults to today)."""
     user_id = session['user_id']
     today = datetime.now().strftime('%Y-%m-%d')
-    tomorrow = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + 
-                __import__('datetime').timedelta(days=1)).strftime('%Y-%m-%d')
+    date_param = request.args.get('date', today)
+    # Basic validation: expect YYYY-MM-DD, fallback to today if invalid
+    try:
+        _ = datetime.strptime(date_param, '%Y-%m-%d')
+    except ValueError:
+        date_param = today
     conn = get_db()
     todos = conn.execute(
-        'SELECT * FROM todos WHERE user_id = ? AND date IN (?, ?) ORDER BY date ASC, priority ASC, id ASC',
-        (user_id, today, tomorrow)
+        'SELECT * FROM todos WHERE user_id = ? AND date = ? ORDER BY date ASC, priority ASC, id ASC',
+        (user_id, date_param)
     ).fetchall()
     conn.close()
     return jsonify([dict(todo) for todo in todos])
@@ -164,14 +168,16 @@ def add_todo():
     if not task:
         return jsonify({'error': 'Task cannot be empty'}), 400
     
-    # Validate and set date (only today or tomorrow allowed)
+    # Validate and set date (allow today or any future date)
     today = datetime.now().strftime('%Y-%m-%d')
-    tomorrow = (datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + 
-                __import__('datetime').timedelta(days=1)).strftime('%Y-%m-%d')
-    
-    if date_str and date_str not in [today, tomorrow]:
-        return jsonify({'error': 'Only today or tomorrow allowed'}), 400
-    
+    if date_str:
+        try:
+            # Ensure valid format and not in the past
+            _ = datetime.strptime(date_str, '%Y-%m-%d')
+            if date_str < today:
+                return jsonify({'error': 'Date cannot be in the past'}), 400
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
     target_date = date_str if date_str else today
     conn = get_db()
     

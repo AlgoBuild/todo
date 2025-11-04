@@ -1,6 +1,6 @@
 let todos = [];
 let draggedElement = null;
-let selectedDate = 'today'; // 'today' or 'tomorrow'
+let selectedDate = 'today'; // 'today' or 'YYYY-MM-DD'
 
 // Load todos on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,14 +16,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Handle date toggle buttons
-    document.querySelectorAll('.date-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.date-toggle-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedDate = btn.dataset.date;
+    // Handle date toggle buttons and date picker
+    const todayBtn = document.querySelector('.date-toggle-btn[data-date="today"]');
+    const datePicker = document.getElementById('datePicker');
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (datePicker) {
+        datePicker.min = todayStr;
+        datePicker.value = '';
+        datePicker.addEventListener('change', () => {
+            selectedDate = datePicker.value || 'today';
+            if (todayBtn) todayBtn.classList.remove('active');
+            loadTodos();
+            updateHeaderTitle();
         });
-    });
+    }
+
+    if (todayBtn) {
+        todayBtn.addEventListener('click', () => {
+            document.querySelectorAll('.date-toggle-btn').forEach(b => b.classList.remove('active'));
+            todayBtn.classList.add('active');
+            selectedDate = 'today';
+            if (datePicker) datePicker.value = '';
+            loadTodos();
+            updateHeaderTitle();
+        });
+    }
     
     // Handle task form submission
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
@@ -41,13 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load todos from API
 async function loadTodos() {
     try {
-        const response = await fetch('/api/todos');
+        const todayStr = new Date().toISOString().split('T')[0];
+        const effectiveDate = selectedDate === 'today' ? todayStr : selectedDate;
+        const response = await fetch(`/api/todos?date=${encodeURIComponent(effectiveDate)}`);
         if (response.status === 401) {
             window.location.href = '/login';
             return;
         }
         todos = await response.json();
         renderTodos();
+        updateHeaderTitle();
     } catch (error) {
         console.error('Error loading todos:', error);
     }
@@ -57,8 +78,7 @@ async function loadTodos() {
 async function addTodo(task, dateType = 'today') {
     try {
         const today = new Date().toISOString().split('T')[0];
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-        const targetDate = dateType === 'tomorrow' ? tomorrow : today;
+        const targetDate = dateType === 'today' ? today : dateType;
         
         const response = await fetch('/api/todos', {
             method: 'POST',
@@ -133,21 +153,13 @@ async function reorderTodos() {
         }
         
         if (response.ok) {
-            // Update priorities in local array based on order within each date
-            const today = new Date().toISOString().split('T')[0];
-            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-            
-            let todayPriority = 0;
-            let tomorrowPriority = 0;
-            
+            // Update priorities locally per date bucket (supports any date)
+            const counters = {};
             todoIds.forEach(id => {
                 const todo = todos.find(t => t.id === id);
                 if (todo) {
-                    if (todo.date === today) {
-                        todo.priority = todayPriority++;
-                    } else if (todo.date === tomorrow) {
-                        todo.priority = tomorrowPriority++;
-                    }
+                    if (!(todo.date in counters)) counters[todo.date] = 0;
+                    todo.priority = counters[todo.date]++;
                 }
             });
         }
@@ -185,7 +197,7 @@ function renderTodos() {
         // Add date header if date changed
         if (todo.date !== currentDate) {
             currentDate = todo.date;
-            const dateLabel = todo.date === today ? 'Today' : 'Tomorrow';
+            const dateLabel = todo.date === today ? 'Today' : formatDateLabel(todo.date);
             html += `<div class="date-header">${dateLabel}</div>`;
         }
         
@@ -212,6 +224,27 @@ function renderTodos() {
     
     // Setup drag and drop
     setupDragAndDrop();
+}
+
+// Update the page header title based on selected date
+function updateHeaderTitle() {
+    const headerTitle = document.querySelector('header h1');
+    if (!headerTitle) return;
+    const today = new Date().toISOString().split('T')[0];
+    const effectiveDate = selectedDate === 'today' ? today : selectedDate;
+    const label = effectiveDate === today ? 'Today' : formatDateLabel(effectiveDate);
+    headerTitle.textContent = `${label}'s Tasks`;
+}
+
+// Format YYYY-MM-DD as a friendly date, e.g., Mon, Nov 10, 2025
+function formatDateLabel(isoDate) {
+    try {
+        const [y, m, d] = isoDate.split('-').map(Number);
+        const dt = new Date(y, (m || 1) - 1, d || 1);
+        return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+        return isoDate;
+    }
 }
 
 // Setup drag and drop
