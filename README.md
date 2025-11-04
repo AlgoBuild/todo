@@ -9,7 +9,7 @@ A minimalistic todo list application with drag-and-drop priority management, use
 ## Features
 
 - ✅ User authentication (login/signup)
-- ✅ Add tasks for today or tomorrow
+- ✅ Add tasks for today and/or any future day
 - ✅ Check off completed tasks
 - ✅ Drag and drop to reorder tasks within each day
 - ✅ Date-based task organization with visual headers
@@ -23,26 +23,31 @@ A minimalistic todo list application with drag-and-drop priority management, use
 
 ## Setup
 
-1. Create and activate virtual environment:
+1. Create a virtual environment:
 ```bash
 python -m venv venv
-# On Windows: .\venv\bin\python
-# On Mac/Linux: source venv/bin/activate
 ```
 
-2. Install dependencies:
+2. Activate the virtual environment:
 ```bash
-# On Windows with Git Bash venv: .\venv\bin\pip install -r requirements.txt
-# On Mac/Linux: pip install -r requirements.txt
+# Windows (PowerShell/CMD)
+venv\Scripts\activate
+
+# Mac/Linux/Git Bash
+source venv/bin/activate
 ```
 
-3. Run the application:
+3. Install dependencies:
 ```bash
-# On Windows with Git Bash venv: .\venv\bin\python app.py
-# On Mac/Linux: python app.py
+pip install -r requirements.txt
 ```
 
-4. Open your browser and navigate to `http://localhost:5000`
+4. Run the application:
+```bash
+python app.py
+```
+
+5. Open your browser and navigate to `http://localhost:5000`
 
 ## Database Schema
 
@@ -54,8 +59,8 @@ python -m venv venv
 - `POST /login` - User login
 - `POST /signup` - User signup
 - `POST /logout` - User logout
-- `GET /api/todos` - Get todos for today and tomorrow
-- `POST /api/todos` - Create a new todo (today or tomorrow)
+- `GET /api/todos` - Get todos for today and/or future days
+- `POST /api/todos` - Create a new todo (today and/or any future date)
 - `PUT /api/todos/<id>` - Update a todo (toggle completion or edit text)
 - `POST /api/todos/reorder` - Reorder todos within same date
 - `DELETE /api/todos/<id>` - Delete a todo
